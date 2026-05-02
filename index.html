@@ -1,0 +1,1953 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compound Return Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f18;
+    --surface: #13151e;
+    --surface2: #1a1d28;
+    --border: #252836;
+    --accent: #d4f060;
+    --accent-dim: rgba(212,240,96,0.12);
+    --blue: #60c4f0;
+    --red: #f06060;
+    --text: #ffffff;
+    --muted: #ffffff;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    min-height: 100vh;
+    padding: 36px 20px 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .loaded-file-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .loaded-file-lbl {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.38);
+    white-space: nowrap;
+  }
+
+  .loaded-file-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--blue);
+    word-break: break-all;
+  }
+
+    h1 {
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 960px;
+    background: var(--surface);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 8px 60px rgba(0,0,0,0.5);
+  }
+
+  /* ── RESULT SECTION (TOP) ── */
+  .result-section { padding: 20px 24px 18px; }
+
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #ffffff;
+  }
+
+  /* summary rows (원금 + 최종합산) */
+  .summary-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .summary-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .summary-row .lbl {
+    font-size: 0.8rem;
+    color: #ffffff;
+    white-space: nowrap;
+    min-width: 120px;
+  }
+
+  .summary-row .val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--accent);
+  }
+
+  /* 이익합산금액 — 크게 */
+  .summary-row .val.big {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .summary-row .lbl.big {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  /* 최종합산금액 — 작게 (원금 크기) */
+  .profit-rate {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    margin-left: 7px;
+    opacity: 0.85;
+  }
+
+    .summary-row .val.final {
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  .summary-row .lbl.final {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: #ffffff;
+  }
+
+  .trade-stats {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+
+  .trade-stats-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+  }
+
+  .trade-stats-lbl {
+    color: rgba(255,255,255,0.55);
+    white-space: nowrap;
+    min-width: 62px;
+  }
+
+  .trade-stats-val {
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  .trade-stats-sub {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.4);
+  }
+
+  .trade-stats-pos { color: var(--accent); }
+  .trade-stats-neg { color: var(--red); }
+
+  .period-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .period-input {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: #ffffff;
+    outline: none;
+    min-width: 0;
+    flex: 1;
+    transition: border-color 0.2s;
+    color-scheme: dark;
+  }
+  .period-input:focus { border-color: var(--accent); }
+
+  .period-sep {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.4);
+  }
+
+  .result-table-wrap { overflow-x: auto; }
+
+  table.result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    min-width: 540px;
+  }
+
+  table.result-table thead tr { background: var(--surface2); }
+
+  table.result-table th {
+    padding: 7px 10px;
+    text-align: center;
+    font-size: 0.63rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #ffffff;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* wider columns for profit cols */
+  table.result-table th:nth-child(4),
+  table.result-table th:nth-child(5) { min-width: 160px; }
+
+  table.result-table th:first-child { width: 40px; }
+
+  table.result-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  table.result-table tbody tr:last-child { border-bottom: none; }
+  table.result-table tbody tr:hover { background: var(--surface2); }
+
+  table.result-table td {
+    padding: 6px 10px;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  td.num     { color: #ffffff; font-size: 0.72rem; }
+  td.buy     { color: var(--blue); }
+  td.sell    { color: #ffffff; }
+  td.profit  { color: var(--accent); font-weight: 500; }
+  td.profit.neg { color: var(--red); }
+  td.cumul   { color: var(--accent); font-weight: 700; }
+  td.cumul.neg  { color: var(--red); }
+
+  .empty-result {
+    text-align: center;
+    color: #ffffff;
+    font-size: 0.78rem;
+    padding: 24px 0;
+    font-style: italic;
+  }
+
+  /* ── THICK DIVIDER ── */
+  .thick-divider {
+    height: 4px;
+    background: var(--accent);
+    opacity: 0.9;
+  }
+
+  /* ── INPUT SECTION (BOTTOM) ── */
+  .input-section { padding: 20px 24px 52px; }
+
+  .input-section .section-label { margin-bottom: 12px; }
+
+  .principal-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .principal-row label { font-size: 0.82rem; color: #ffffff; white-space: nowrap; }
+
+  .principal-input {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    padding: 9px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.92rem;
+    color: var(--accent);
+    width: 200px;
+    outline: none;
+    transition: border-color 0.2s;
+    -moz-appearance: textfield;
+  }
+  .principal-input::-webkit-outer-spin-button,
+  .principal-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .principal-input:focus { border-color: var(--accent); }
+
+  .input-col-headers {
+    display: grid;
+    grid-template-columns: 36px 1fr 1fr 44px;
+    gap: 5px;
+    margin-bottom: 6px;
+    padding: 0 2px;
+  }
+
+  .input-col-headers span {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: #ffffff;
+    text-align: center;
+  }
+
+  .input-rows-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .input-row {
+    display: grid;
+    grid-template-columns: 36px 1fr 1fr 44px;
+    gap: 5px;
+    align-items: center;
+    animation: slideIn 0.22s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-7px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .row-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: #ffffff;
+    text-align: center;
+  }
+
+  .input-row input[type="text"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.88rem;
+    color: #ffffff;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s, font-size 0.1s;
+    overflow: hidden;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  .input-row input[type="text"]:focus {
+    border-color: var(--accent);
+    background: rgba(212,240,96,0.05);
+  }
+
+  .input-row input.frozen {
+    color: #aaaaaa;
+    border-style: dashed;
+    border-color: var(--border);
+    cursor: pointer;
+  }
+
+  .input-row input.frozen:hover {
+    border-color: var(--accent);
+    color: #cccccc;
+  }
+
+  .input-row input.err { border-color: var(--red) !important; }
+
+  .row-checkbox {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: var(--accent);
+    margin: 0 auto;
+    display: block;
+  }
+
+  .btn-delete-checked {
+    background: transparent;
+    border: 1.5px solid rgba(240,96,96,0.6);
+    color: var(--red);
+    border-radius: 5px;
+    padding: 3px 6px;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 0.05em;
+    width: 100%;
+  }
+  .btn-delete-checked:hover { background: rgba(240,96,96,0.14); }
+  .btn-delete-checked:active { transform: scale(0.97); }
+
+
+  .btn-add {
+    background: var(--accent-dim);
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    border-radius: 7px;
+    padding: 6px 0;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    width: 100%;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+  .btn-add:hover { background: rgba(212,240,96,0.22); }
+  .btn-add:active { transform: scale(0.97); }
+  .btn-add:disabled { opacity: 0.25; cursor: not-allowed; transform: none; }
+
+  /* Reset button — top-right of result section */
+  .btn-reset {
+    background: transparent;
+    border: 1.5px solid var(--red);
+    color: var(--red);
+    border-radius: 7px;
+    padding: 6px 14px;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+  }
+  .btn-reset:hover { background: rgba(240,96,96,0.14); }
+
+  /* ── GRAPH BUTTON ── */
+  .btn-graph {
+    background: var(--accent-dim);
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    border-radius: 7px;
+    padding: 6px 14px;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, transform 0.1s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn-graph:hover { background: rgba(212,240,96,0.22); }
+  .btn-graph:active { transform: scale(0.97); }
+  .btn-graph:disabled { opacity: 0.25; cursor: not-allowed; }
+
+  /* ── GRAPH PANEL ── */
+  .graph-panel {
+    display: none;
+    padding: 0 0 16px 0;
+    animation: fadeIn 0.3s ease;
+  }
+  .graph-panel.open { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .graph-panel-inner {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 0;
+  }
+
+  .graph-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 0 12px;
+  }
+
+  .graph-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #ffffff;
+  }
+
+  .graph-legend {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: #ffffff;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .legend-line {
+    width: 18px;
+    height: 2px;
+    border-top: 2px dashed rgba(255,255,255,0.4);
+  }
+
+  canvas#profit-chart {
+    width: 100% !important;
+    height: 260px !important;
+    display: block;
+  }
+
+  canvas#bar-chart {
+    width: 100% !important;
+    height: 240px !important;
+    display: block;
+  }
+
+  /* ── SAVE / LOAD PANEL ── */
+  .save-panel {
+    width: 100%;
+    max-width: 960px;
+    background: var(--surface);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 8px 60px rgba(0,0,0,0.5);
+    margin-top: 32px;
+  }
+
+  /* ── TOP ACTION BUTTONS ROW ── */
+  .save-panel-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .btn-panel-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 15px 10px;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s, transform 0.1s;
+    user-select: none;
+  }
+  .btn-panel-action:active { transform: scale(0.97); }
+
+  .btn-panel-save {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-right: 1px solid var(--border);
+    border-bottom: 2px solid var(--accent);
+  }
+  .btn-panel-save:hover { background: rgba(212,240,96,0.2); }
+
+  .btn-panel-load {
+    background: rgba(96,196,240,0.08);
+    color: var(--blue);
+    border-bottom: 2px solid var(--blue);
+  }
+  .btn-panel-load:hover { background: rgba(96,196,240,0.16); }
+
+  /* ── SAVE AREA ── */
+  .save-area {
+    display: none;
+    padding: 16px 20px 18px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeSlide 0.2s ease;
+  }
+  .save-area.open { display: block; }
+
+  .save-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .save-name-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    padding: 9px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.86rem;
+    color: #ffffff;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .save-name-input::placeholder { color: rgba(255,255,255,0.25); }
+  .save-name-input:focus { border-color: var(--accent); }
+
+  .btn-save-do {
+    background: var(--accent-dim);
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    border-radius: 7px;
+    padding: 9px 18px;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn-save-do:hover { background: rgba(212,240,96,0.22); }
+  .btn-save-do:active { transform: scale(0.97); }
+
+  /* ── LOAD AREA ── */
+  .load-area {
+    display: none;
+    padding: 16px 20px 18px;
+    animation: fadeSlide 0.2s ease;
+  }
+  .load-area.open { display: block; }
+
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .saved-list-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.60rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 8px;
+  }
+
+  .saved-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .saved-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    transition: border-color 0.15s;
+  }
+  .saved-item:hover { border-color: rgba(96,196,240,0.35); }
+
+  .saved-item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .saved-item-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.84rem;
+    color: #ffffff;
+    white-space: normal;
+    word-break: break-all;
+    overflow: visible;
+  }
+
+  .saved-item-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: rgba(255,255,255,0.35);
+    white-space: nowrap;
+  }
+
+  .btn-load {
+    background: transparent;
+    border: 1.5px solid var(--blue);
+    color: var(--blue);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .btn-load:hover { background: rgba(96,196,240,0.12); }
+
+  .btn-del {
+    background: transparent;
+    border: 1.5px solid rgba(240,96,96,0.5);
+    color: var(--red);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .btn-del:hover { background: rgba(240,96,96,0.12); }
+
+  .save-empty {
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.25);
+    padding: 18px 0;
+    font-style: italic;
+  }
+
+  .save-toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: var(--accent);
+    color: #0d0f18;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: 999px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 999;
+  }
+  .save-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Backtesting Calculator">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#7c3aed">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <script>
+    if('serviceWorker' in navigator){
+      window.addEventListener('load',()=>{
+        navigator.serviceWorker.register('./service-worker.js');
+      });
+    }
+    window.addEventListener('beforeinstallprompt',e=>{
+      e.preventDefault();
+      window._pwaE=e;
+      var b=document.createElement('div');
+      b.style='position:fixed;bottom:0;left:0;right:0;background:#7c3aed;color:#fff;padding:18px;text-align:center;z-index:9999;font-size:15px;font-weight:bold;cursor:pointer;font-family:sans-serif;';
+      b.innerHTML='📲 홈화면에 앱 추가하기 · Add to Home Screen';
+      b.onclick=async function(){window._pwaE.prompt();var r=await window._pwaE.userChoice;if(r.outcome==='accepted')b.remove();};
+      document.body.appendChild(b);
+    });
+  </script>
+</head>
+<body>
+
+<h1>Backtesting Calculator</h1>
+<p class="subtitle">내 마음대로 백테스팅 계산기</p>
+<div class="loaded-file-bar" id="loaded-file-bar" style="display:none;">
+  <span class="loaded-file-lbl">파일명</span>
+  <span class="loaded-file-name" id="loaded-file-name"></span>
+
+</div>
+
+<div class="card">
+
+  <!-- TOP: RESULT -->
+  <div class="result-section">
+    <div class="result-header">
+      <div class="section-label">결과부 — Result</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn-graph" id="btn-graph" onclick="toggleGraph()" disabled>
+          <span>📈</span> 손익 그래프 보기
+        </button>
+        <button class="btn-reset" onclick="confirmReset()">⚠ 초기화 Reset</button>
+      </div>
+    </div>
+
+    <div class="summary-rows">
+      <div class="summary-row">
+        <span class="lbl">원금 (최초 투자금)</span>
+        <span class="val" id="display-principal">3,000,000 원</span>
+      </div>
+      <div class="summary-row">
+        <span class="lbl big">이익 합산금액</span>
+        <span class="val big" id="display-profit-sum">—</span><span class="profit-rate" id="display-profit-rate"></span>
+      </div>
+      <div class="summary-row">
+        <span class="lbl final">최종 합산금액</span>
+        <span class="val final" id="display-final">—</span>
+      </div>
+      <div class="summary-row">
+        <span class="lbl final">단순 이익금액</span>
+        <span class="val final" id="display-simple-profit">—</span>
+      </div>
+    </div>
+
+    <!-- 거래 통계 블록 -->
+    <div class="trade-stats" id="trade-stats" style="display:none;">
+      <div class="trade-stats-row">
+        <span class="trade-stats-lbl">거래횟수</span>
+        <span class="trade-stats-val" id="ts-count">—</span>
+        <span class="trade-stats-sub" id="ts-avg"></span>
+      </div>
+      <div class="trade-stats-row">
+        <span class="trade-stats-lbl trade-stats-pos">+ 횟수</span>
+        <span class="trade-stats-val trade-stats-pos" id="ts-win-count">—</span>
+        <span class="trade-stats-sub trade-stats-pos" id="ts-win-sum"></span>
+        <span class="trade-stats-sub trade-stats-pos" id="ts-win-pct"></span>
+      </div>
+      <div class="trade-stats-row">
+        <span class="trade-stats-lbl" style="color:rgba(255,255,255,0.3);">1회당 이익</span>
+        <span class="trade-stats-val trade-stats-pos" id="ts-win-avg"></span>
+      </div>
+      <div class="trade-stats-row" style="margin-top:4px;">
+        <span class="trade-stats-lbl trade-stats-neg">- 횟수</span>
+        <span class="trade-stats-val trade-stats-neg" id="ts-loss-count">—</span>
+        <span class="trade-stats-sub trade-stats-neg" id="ts-loss-sum"></span>
+        <span class="trade-stats-sub trade-stats-neg" id="ts-loss-pct"></span>
+      </div>
+      <div class="trade-stats-row">
+        <span class="trade-stats-lbl" style="color:rgba(255,255,255,0.3);">1회당 손실</span>
+        <span class="trade-stats-val trade-stats-neg" id="ts-loss-avg"></span>
+      </div>
+
+      <!-- 기간 입력 -->
+      <div class="period-row" style="margin-top:10px;">
+        <span class="trade-stats-lbl" style="min-width:unset;">기간</span>
+        <input type="date" class="period-input" id="period-start" onchange="calcPeriodAvg()">
+        <span class="period-sep">~</span>
+        <input type="date" class="period-input" id="period-end" onchange="calcPeriodAvg()">
+      </div>
+
+      <!-- 연/월 평균 (기간 입력 후 표시) -->
+      <div id="period-results" style="display:none;">
+        <div class="trade-stats-row" style="margin-top:6px;">
+          <span class="trade-stats-lbl">년수 환산</span>
+          <span class="trade-stats-val" id="ts-years"></span>
+          <span class="trade-stats-sub" style="margin-left:10px;">월수 환산</span>
+          <span class="trade-stats-val" style="margin-left:4px;" id="ts-months"></span>
+        </div>
+        <div class="trade-stats-row" style="margin-top:4px;">
+          <span class="trade-stats-lbl">년 평균수익</span>
+          <span class="trade-stats-val" id="ts-year-avg"></span>
+        </div>
+        <div class="trade-stats-row">
+          <span class="trade-stats-lbl">월 평균수익</span>
+          <span class="trade-stats-val" id="ts-month-avg"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-table-wrap">
+      <!-- GRAPH PANEL -->
+      <div class="graph-panel" id="graph-panel">
+        <div class="graph-panel-inner">
+          <div class="graph-title-row">
+            <span class="graph-title">합산이익 추이 — Cumulative P&amp;L Chart</span>
+            <div class="graph-legend">
+              <div class="legend-item">
+                <div class="legend-dot" style="background:var(--accent);"></div>
+                <span>합산이익</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-line"></div>
+                <span>원금</span>
+              </div>
+            </div>
+          </div>
+          <canvas id="profit-chart"></canvas>
+        </div>
+        <!-- 거래별 단일이익 -->
+        <div class="graph-panel-inner" style="margin-top:12px;">
+          <div class="graph-title-row">
+            <span class="graph-title">▸ 거래별 단일이익 — Per-Trade Profit</span>
+            <div class="graph-legend">
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#4ade80;"></div>
+                <span>수익</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:var(--red);"></div>
+                <span>손실</span>
+              </div>
+            </div>
+          </div>
+          <canvas id="bar-chart"></canvas>
+        </div>
+      </div>
+      <table class="result-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>입력값2 (매입가)</th>
+            <th>입력값3 (매도가)</th>
+            <th>단일이익</th>
+            <th>합산이익</th>
+            <th>단순이익</th>
+          </tr>
+        </thead>
+        <tbody id="result-tbody">
+          <tr><td colspan="5" class="empty-result">하단 입력부에서 매입가·매도가를 입력 후 [추가]를 눌러주세요.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- THICK DIVIDER -->
+  <div class="thick-divider"></div>
+
+  <!-- BOTTOM: INPUT -->
+  <div class="input-section">
+    <div class="section-label">입력부 — Input</div>
+
+    <div class="principal-row">
+      <label>입력값1 &nbsp;원금</label>
+      <input type="text" class="principal-input" id="principal-input" value="3,000,000" placeholder="원금 입력" inputmode="numeric">
+    </div>
+
+    <div class="input-col-headers">
+      <button class="btn-delete-checked" onclick="deleteCheckedRows()">삭제</button>
+      <span>입력값2 (매입가)</span>
+      <span>입력값3 (매도가)</span>
+      <span></span>
+    </div>
+
+    <div class="input-rows-container" id="input-rows"></div>
+  </div>
+
+<!-- SAVE / LOAD PANEL -->
+<div class="save-panel">
+  <div class="save-panel-actions">
+    <button class="btn-panel-action btn-panel-save" onclick="toggleSaveArea()">
+      <span>💾</span> 저장하기
+    </button>
+    <button class="btn-panel-action btn-panel-load" onclick="toggleLoadArea()">
+      <span>📂</span> 불러오기
+    </button>
+  </div>
+
+  <!-- 저장 영역 -->
+  <div class="save-area" id="save-area">
+    <div class="save-row">
+      <input type="text" class="save-name-input" id="save-name-input" placeholder="저장할 이름을 입력하세요…" maxlength="40">
+      <button class="btn-save-do" onclick="saveCurrentData()">저장</button>
+    </div>
+  </div>
+
+  <!-- 불러오기 영역 -->
+  <div class="load-area" id="load-area">
+    <div class="saved-list-label">저장된 목록</div>
+    <div class="saved-list" id="saved-list"></div>
+  </div>
+</div>
+
+<div class="save-toast" id="save-toast"></div>
+
+</div>
+
+<script>
+  let rows = [];
+  let rowCounter = 0;
+  let chartInstance = null;
+  let graphOpen = false;
+  let lastChartData = null; // { principal, cumulatives }
+  let currentLoadedFile = null; // 현재 불러온 파일명 (자동 저장용)
+
+  /* ── 콤마 포매팅 유틸 ── */
+  function addCommas(str) {
+    const raw = str.replace(/[^0-9.]/g, '');
+    const parts = raw.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  }
+  function stripCommas(str) {
+    return str.replace(/,/g, '');
+  }
+  function parseCommaNum(str) {
+    return parseFloat(stripCommas(str));
+  }
+  /* 입력값이 박스를 넘칠 때 폰트 자동 축소 */
+  function autoShrinkFont(el) {
+    el.style.fontSize = '';
+    const maxSize = 0.88;
+    const minSize = 0.55;
+    let size = maxSize;
+    while (el.scrollWidth > el.clientWidth && size > minSize) {
+      size = Math.round((size - 0.04) * 100) / 100;
+      el.style.fontSize = size + 'rem';
+    }
+  }
+
+  function attachCommaInput(el) {
+    el.addEventListener('input', () => {
+      const pos = el.selectionStart;
+      const before = el.value.length;
+      el.value = addCommas(el.value);
+      const after = el.value.length;
+      el.setSelectionRange(pos + (after - before), pos + (after - before));
+      autoShrinkFont(el);
+    });
+  }
+
+  renderInputRow();
+  syncPrincipalDisplay();
+
+  const principalEl = document.getElementById('principal-input');
+  attachCommaInput(principalEl);
+  principalEl.addEventListener('input', () => {
+    syncPrincipalDisplay();
+    renderResults();
+  });
+
+  function getPrincipal() {
+    const v = parseCommaNum(document.getElementById('principal-input').value);
+    return (!isNaN(v) && v > 0) ? v : 3000000;
+  }
+
+  function syncPrincipalDisplay() {
+    document.getElementById('display-principal').textContent = fmt(getPrincipal());
+  }
+
+  function renderInputRow() {
+    rowCounter++;
+    const n = rowCounter;
+    const container = document.getElementById('input-rows');
+    const div = document.createElement('div');
+    div.className = 'input-row';
+    div.id = `irow-${n}`;
+    div.innerHTML = `
+      <input type="checkbox" class="row-checkbox" id="chk-${n}">
+      <span class="row-num" id="rownum-${n}" style="display:none">${n}</span>
+      <input type="text" id="buy-${n}" placeholder="매입가" inputmode="numeric">
+      <input type="text" id="sell-${n}" placeholder="매도가" inputmode="numeric">
+      <button class="btn-add" id="btn-${n}" onclick="confirmRow(${n})">추가</button>
+    `;
+    container.appendChild(div);
+
+    // 콤마 포매팅 이벤트
+    ['buy', 'sell'].forEach(type => {
+      const el = document.getElementById(`${type}-${n}`);
+      attachCommaInput(el);
+    });
+
+    // frozen 상태에서 클릭하면 편집 모드로 전환
+    ['buy', 'sell'].forEach(type => {
+      const el = document.getElementById(`${type}-${n}`);
+      el.addEventListener('click', () => {
+        if (el.classList.contains('frozen')) {
+          unfreezeRow(n);
+          el.focus();
+          const val = el.value;
+          el.value = '';
+          el.value = val;
+        }
+      });
+    });
+  }
+
+  function deleteCheckedRows() {
+    const container = document.getElementById('input-rows');
+    const allRows = container.querySelectorAll('.input-row');
+    const toDelete = [];
+
+    allRows.forEach(rowEl => {
+      const rowId = rowEl.id.replace('irow-', '');
+      const chk = document.getElementById(`chk-${rowId}`);
+      if (chk && chk.checked) {
+        toDelete.push(parseInt(rowId));
+      }
+    });
+
+    if (toDelete.length === 0) return;
+
+    // Remove from rows array and DOM
+    toDelete.forEach(n => {
+      const idx = rows.findIndex(r => r.rowN === n);
+      if (idx !== -1) rows.splice(idx, 1);
+      const el = document.getElementById(`irow-${n}`);
+      if (el) el.remove();
+    });
+
+    renumberRows();
+    renderResults();
+
+    // 마지막 행이 없거나 모두 frozen이면 새 입력행 추가
+    const remaining = container.querySelectorAll('.input-row');
+    let hasBlank = false;
+    remaining.forEach(rowEl => {
+      const rowId = rowEl.id.replace('irow-', '');
+      const btn = document.getElementById(`btn-${rowId}`);
+      if (btn && !btn.disabled) hasBlank = true;
+    });
+    if (!hasBlank) renderInputRow();
+  }
+
+  function renumberRows() {
+    const container = document.getElementById('input-rows');
+    const allRows = container.querySelectorAll('.input-row');
+    allRows.forEach((rowEl, idx) => {
+      const numEl = rowEl.querySelector('.row-num');
+      if (numEl) numEl.textContent = idx + 1;
+    });
+  }
+
+  function confirmRow(n) {
+    const buyEl  = document.getElementById(`buy-${n}`);
+    const sellEl = document.getElementById(`sell-${n}`);
+    const buy    = parseCommaNum(buyEl.value);
+    const sell   = parseCommaNum(sellEl.value);
+
+    let ok = true;
+    if (isNaN(buy)  || buy  <= 0) { buyEl.classList.add('err');  ok = false; } else { buyEl.classList.remove('err'); }
+    if (isNaN(sell) || sell <= 0) { sellEl.classList.add('err'); ok = false; } else { sellEl.classList.remove('err'); }
+    if (!ok) return;
+
+    const rowIndex = rows.findIndex(r => r.rowN === n);
+
+    buyEl.classList.add('frozen');
+    sellEl.classList.add('frozen');
+    const btn = document.getElementById(`btn-${n}`);
+    btn.disabled = true;
+
+    if (rowIndex === -1) {
+      rows.push({ buy, sell, rowN: n });
+    } else {
+      rows[rowIndex] = { buy, sell, rowN: n };
+    }
+    renderResults();
+
+    if (!document.getElementById(`irow-${n + 1}`)) {
+      renderInputRow();
+    }
+
+    // 다음 행 매입가로 커서 이동
+    setTimeout(() => {
+      const nextBuy = document.getElementById(`buy-${n + 1}`);
+      if (nextBuy) {
+        nextBuy.focus();
+        nextBuy.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 50);
+  }
+
+  function unfreezeRow(n) {
+    const buyEl  = document.getElementById(`buy-${n}`);
+    const sellEl = document.getElementById(`sell-${n}`);
+    const btn    = document.getElementById(`btn-${n}`);
+    buyEl.classList.remove('frozen');
+    sellEl.classList.remove('frozen');
+    btn.disabled = false;
+  }
+
+  function renderResults() {
+    const principal = getPrincipal();
+    const tbody = document.getElementById('result-tbody');
+    const finalEl = document.getElementById('display-final');
+    const simpleProfitEl = document.getElementById('display-simple-profit');
+    const btnGraph = document.getElementById('btn-graph');
+
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="empty-result">하단 입력부에서 매입가·매도가를 입력 후 [추가]를 눌러주세요.</td></tr>`;
+      finalEl.textContent = '—';
+      finalEl.style.color = '';
+      document.getElementById('display-profit-sum').textContent = '—';
+      document.getElementById('display-profit-sum').style.color = '';
+      document.getElementById('display-profit-rate').textContent = '';
+      document.getElementById('trade-stats').style.display = 'none';
+      document.getElementById('loaded-file-bar').style.display = 'none';
+      document.getElementById('loaded-file-name').textContent = '';
+      document.getElementById('period-start').value = '';
+      document.getElementById('period-end').value = '';
+      document.getElementById('period-results').style.display = 'none';
+      simpleProfitEl.textContent = '—';
+      simpleProfitEl.style.color = '';
+      btnGraph.disabled = true;
+      lastChartData = null;
+      if (graphOpen) closeGraph();
+      return;
+    }
+
+    let html = '';
+    let prevCumulative = 0;
+    let lastCumulative = 0;
+    let totalSimpleProfit = 0;
+    const cumulatives = []; // 회차별 합산금액 (원금부터 시작)
+
+    rows.forEach((r, i) => {
+      const capital = (i === 0) ? principal : prevCumulative;
+      const qty = capital / r.buy;
+      const singleProfit = qty * (r.sell - r.buy);
+      const cumulative = (i === 0) ? principal + singleProfit : prevCumulative + singleProfit;
+      prevCumulative = cumulative;
+      lastCumulative = cumulative;
+      cumulatives.push(cumulative);
+
+      const simpleQty = principal / r.buy;
+      const simpleProfit = simpleQty * (r.sell - r.buy);
+      totalSimpleProfit += simpleProfit;
+
+      const pCls  = singleProfit >= 0 ? 'profit' : 'profit neg';
+      const cCls  = cumulative  >= 0 ? 'cumul'  : 'cumul neg';
+      const sCls  = simpleProfit >= 0 ? 'profit' : 'profit neg';
+
+
+      html += `
+        <tr>
+          <td class="num">${i + 1}</td>
+          <td class="buy">${fmt(r.buy)}</td>
+          <td class="sell">${fmt(r.sell)}</td>
+          <td class="${pCls}">${fmt(singleProfit)}</td>
+          <td class="${cCls}">${fmt(cumulative)}</td>
+          <td class="${sCls}">${fmt(simpleProfit)}</td>
+        </tr>`;
+    });
+
+    tbody.innerHTML = html;
+
+    finalEl.textContent = fmt(lastCumulative);
+    finalEl.style.color = lastCumulative >= 0 ? 'var(--accent)' : 'var(--red)';
+
+    const profitSum = lastCumulative - principal;
+    const profitEl = document.getElementById('display-profit-sum');
+    profitEl.textContent = fmt(profitSum);
+    profitEl.style.color = profitSum >= 0 ? 'var(--accent)' : 'var(--red)';
+    const rateEl = document.getElementById('display-profit-rate');
+    const rateVal = principal > 0 ? (profitSum / principal * 100) : 0;
+    rateEl.textContent = '(' + rateVal.toFixed(1) + '%)';
+    rateEl.style.color = profitSum >= 0 ? 'var(--accent)' : 'var(--red)';
+
+    simpleProfitEl.textContent = fmt(totalSimpleProfit);
+    simpleProfitEl.style.color = totalSimpleProfit >= 0 ? 'var(--accent)' : 'var(--red)';
+
+    // 거래 통계
+    const singleProfitList = [];
+    let _prev = 0;
+    rows.forEach((r, i) => {
+      const cap = (i === 0) ? principal : _prev;
+      const sp  = (cap / r.buy) * (r.sell - r.buy);
+      singleProfitList.push(sp);
+      _prev = cap + sp;
+    });
+    const totalCount  = singleProfitList.length;
+    const profitSum2  = lastCumulative - principal;
+    const avgPerTrade = totalCount > 0 ? profitSum2 / totalCount : 0;
+    const wins        = singleProfitList.filter(v => v >= 0);
+    const losses      = singleProfitList.filter(v => v < 0);
+    const winSum      = wins.reduce((a, b) => a + b, 0);
+    const lossSum     = losses.reduce((a, b) => a + b, 0);
+
+    document.getElementById('trade-stats').style.display = totalCount > 0 ? '' : 'none';
+    calcPeriodAvg();
+    document.getElementById('ts-count').textContent      = totalCount + '회';
+    document.getElementById('ts-avg').textContent        = '(' + fmt(avgPerTrade) + ')';
+    const winPct  = totalCount > 0 ? (wins.length / totalCount * 100).toFixed(1) : 0;
+    const lossPct = totalCount > 0 ? (losses.length / totalCount * 100).toFixed(1) : 0;
+    const winAvg  = wins.length   > 0 ? winSum  / wins.length   : 0;
+    const lossAvg = losses.length > 0 ? lossSum / losses.length : 0;
+
+    document.getElementById('ts-win-count').textContent  = wins.length + '회';
+    document.getElementById('ts-win-sum').textContent    = wins.length > 0 ? '(' + fmt(winSum) + ')' : '';
+    document.getElementById('ts-win-pct').textContent    = wins.length > 0 ? '(' + winPct + '%)' : '';
+    document.getElementById('ts-win-avg').textContent    = wins.length > 0 ? fmt(winAvg) : '—';
+    document.getElementById('ts-loss-count').textContent = losses.length + '회';
+    document.getElementById('ts-loss-sum').textContent   = losses.length > 0 ? '(' + fmt(lossSum) + ')' : '';
+    document.getElementById('ts-loss-pct').textContent   = losses.length > 0 ? '(' + lossPct + '%)' : '';
+    document.getElementById('ts-loss-avg').textContent   = losses.length > 0 ? fmt(lossAvg) : '—';
+
+    // 그래프 버튼 활성화
+    btnGraph.disabled = false;
+    // 회차별 단일이익 (실제 금액)
+    const singleProfits = [];
+    let prev2 = 0;
+    rows.forEach((r, i) => {
+      const capital = (i === 0) ? principal : prev2;
+      const qty = capital / r.buy;
+      const sp = qty * (r.sell - r.buy);
+      singleProfits.push(sp);
+      prev2 = capital + sp;
+    });
+
+    lastChartData = { principal, cumulatives, singleProfits };
+
+    // 그래프가 열려 있으면 자동 갱신
+    if (graphOpen) {
+      drawChart(lastChartData.principal, lastChartData.cumulatives);
+      drawBarChart(lastChartData.singleProfits);
+    }
+
+    // 불러온 파일이 있으면 자동 저장
+    if (currentLoadedFile) {
+      autoSaveToFile(currentLoadedFile);
+    }
+  }
+
+  /* ── GRAPH TOGGLE ── */
+  function toggleGraph() {
+    if (graphOpen) {
+      closeGraph();
+    } else {
+      openGraph();
+    }
+  }
+
+  function openGraph() {
+    graphOpen = true;
+    const panel = document.getElementById('graph-panel');
+    panel.classList.add('open');
+    document.getElementById('btn-graph').innerHTML = '<span>📉</span> 그래프 닫기';
+    if (lastChartData) {
+      requestAnimationFrame(() => {
+        drawChart(lastChartData.principal, lastChartData.cumulatives);
+        if (lastChartData.singleProfits) drawBarChart(lastChartData.singleProfits);
+      });
+    }
+  }
+
+  function closeGraph() {
+    graphOpen = false;
+    document.getElementById('graph-panel').classList.remove('open');
+    document.getElementById('btn-graph').innerHTML = '<span>📈</span> 손익 그래프 보기';
+    if (chartInstance) { chartInstance = null; }
+  }
+
+  /* ── CANVAS CHART (vanilla, no library) ── */
+  function drawChart(principal, cumulatives) {
+    const canvas = document.getElementById('profit-chart');
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.offsetWidth;
+    const H = canvas.offsetHeight || 260;
+
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    // Padding
+    const PAD_L = 58, PAD_R = 4, PAD_T = 20, PAD_B = 48;
+    const gW = W - PAD_L - PAD_R;
+    const gH = H - PAD_T - PAD_B;
+
+    // Data: 원금(0회차)부터 시작
+    const dataValues = [principal, ...cumulatives];
+    const labels = ['원금', ...cumulatives.map((_, i) => `${i + 1}회`)];
+    const n = dataValues.length;
+
+    // Y range
+    const allVals = [...dataValues, principal];
+    let yMin = Math.min(...allVals);
+    let yMax = Math.max(...allVals);
+    const yPad = (yMax - yMin) * 0.15 || principal * 0.1;
+    yMin -= yPad;
+    yMax += yPad;
+
+    // Helpers
+    const xPos = i => PAD_L + (i / (n - 1)) * gW;
+    const yPos = v => PAD_T + (1 - (v - yMin) / (yMax - yMin)) * gH;
+    const principalY = yPos(principal);
+
+    // ── Background clear
+    ctx.clearRect(0, 0, W, H);
+
+    // ── Grid lines (horizontal, 5 lines)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = 1;
+    for (let k = 0; k <= 4; k++) {
+      const gy = PAD_T + (k / 4) * gH;
+      ctx.beginPath();
+      ctx.moveTo(PAD_L, gy);
+      ctx.lineTo(PAD_L + gW, gy);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // ── Principal dashed line (horizontal)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.38)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    ctx.moveTo(PAD_L, principalY);
+    ctx.lineTo(PAD_L + gW, principalY);
+    ctx.stroke();
+    ctx.restore();
+
+    // 원금 라벨 (우측)
+    ctx.save();
+    ctx.font = '500 10px "DM Mono", monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.textAlign = 'right';
+    ctx.fillText('원금', PAD_L - 6, principalY + 4);
+    ctx.restore();
+
+    // ── Area fill under line (gradient, green/red by value vs principal)
+    const gradient = ctx.createLinearGradient(0, PAD_T, 0, PAD_T + gH);
+    gradient.addColorStop(0,   'rgba(212,240,96,0.22)');
+    gradient.addColorStop(1,   'rgba(212,240,96,0.00)');
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(xPos(0), yPos(dataValues[0]));
+    for (let i = 1; i < n; i++) {
+      const x0 = xPos(i - 1), y0 = yPos(dataValues[i - 1]);
+      const x1 = xPos(i),     y1 = yPos(dataValues[i]);
+      const cpx = (x0 + x1) / 2;
+      ctx.bezierCurveTo(cpx, y0, cpx, y1, x1, y1);
+    }
+    ctx.lineTo(xPos(n - 1), PAD_T + gH);
+    ctx.lineTo(xPos(0),     PAD_T + gH);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.restore();
+
+    // ── Line
+    ctx.save();
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const x = xPos(i), y = yPos(dataValues[i]);
+      // Segment color: profit→accent, loss→red
+      if (i > 0) {
+        const isProfit = dataValues[i] >= principal;
+        ctx.strokeStyle = isProfit ? '#d4f060' : '#f06060';
+        ctx.beginPath();
+        const x0 = xPos(i - 1), y0 = yPos(dataValues[i - 1]);
+        const cpx = (x0 + x) / 2;
+        ctx.moveTo(x0, y0);
+        ctx.bezierCurveTo(cpx, y0, cpx, y, x, y);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+
+    // ── Dots + labels
+    for (let i = 0; i < n; i++) {
+      const x = xPos(i);
+      const y = yPos(dataValues[i]);
+      const isProfit = dataValues[i] >= principal;
+      const dotColor = i === 0 ? '#ffffff' : (isProfit ? '#d4f060' : '#f06060');
+
+      // Glow
+      ctx.save();
+      ctx.shadowColor = dotColor;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(x, y, i === 0 ? 4.5 : 5, 0, Math.PI * 2);
+      ctx.fillStyle = dotColor;
+      ctx.fill();
+      ctx.restore();
+
+      // Inner dot
+      ctx.beginPath();
+      ctx.arc(x, y, i === 0 ? 2.5 : 2.8, 0, Math.PI * 2);
+      ctx.fillStyle = '#0d0f18';
+      ctx.fill();
+
+      // Value label above dot
+      const valStr = fmtShort(dataValues[i]);
+      ctx.save();
+      ctx.font = 'bold 9px "DM Mono", monospace';
+      ctx.fillStyle = dotColor;
+      ctx.textAlign = 'center';
+      ctx.fillText(valStr, x, y - 10);
+      ctx.restore();
+
+      // X-axis label
+      ctx.save();
+      ctx.font = '10px "DM Mono", monospace';
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.textAlign = 'center';
+      ctx.fillText(labels[i], x, PAD_T + gH + 18);
+      ctx.restore();
+    }
+
+    // ── Y axis ticks
+    ctx.save();
+    ctx.font = '9px "DM Mono", monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.30)';
+    ctx.textAlign = 'right';
+    for (let k = 0; k <= 4; k++) {
+      const v = yMin + (yMax - yMin) * (1 - k / 4);
+      ctx.fillText(fmtShort(v), PAD_L - 8, PAD_T + (k / 4) * gH + 4);
+    }
+    ctx.restore();
+  }
+
+  /* ── BAR CHART: 거래별 단일이익 ── */
+  function drawBarChart(profits) {
+    const canvas = document.getElementById('bar-chart');
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.offsetWidth;
+    const H = canvas.offsetHeight || 240;
+
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const PAD_L = 58, PAD_R = 4, PAD_T = 20, PAD_B = 44;
+    const gW = W - PAD_L - PAD_R;
+    const gH = H - PAD_T - PAD_B;
+    const n  = profits.length;
+
+    // Y range (비대칭): 양수는 최대값 기준 넉넉히, 음수는 실제값 + 소폭 여유만
+    const posMax = Math.max(...profits.filter(v => v >= 0), 0);
+    const negMin = Math.min(...profits.filter(v => v <  0), 0);
+    const yMax   = posMax > 0 ? posMax * 1.35 : 1;
+    const yMin   = negMin < 0 ? negMin * 1.15 : -yMax * 0.15;
+
+    const yPos = v => PAD_T + (1 - (v - yMin) / (yMax - yMin)) * gH;
+    const zeroY = yPos(0);
+
+    // Clear
+    ctx.clearRect(0, 0, W, H);
+
+    // Grid lines
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let k = 0; k <= 4; k++) {
+      const gy = PAD_T + (k / 4) * gH;
+      ctx.beginPath(); ctx.moveTo(PAD_L, gy); ctx.lineTo(PAD_L + gW, gy); ctx.stroke();
+    }
+    ctx.restore();
+
+    // Zero line
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.30)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(PAD_L, zeroY); ctx.lineTo(PAD_L + gW, zeroY); ctx.stroke();
+    ctx.restore();
+
+    // Bars
+    const gap   = Math.max(1, gW * 0.015);
+    const barW  = Math.max(2, gW / n - gap);
+    const step  = gW / n;
+
+    profits.forEach((profit, i) => {
+      const isPos  = profit >= 0;
+      const barTop = isPos ? yPos(profit) : zeroY;
+      const barH   = Math.max(2, Math.abs(yPos(profit) - zeroY));
+      const x      = PAD_L + i * step + (step - barW) / 2;
+
+      // Gradient fill
+      const grad = ctx.createLinearGradient(0, barTop, 0, barTop + barH);
+      if (isPos) {
+        grad.addColorStop(0, 'rgba(74,222,128,0.95)');
+        grad.addColorStop(1, 'rgba(74,222,128,0.40)');
+      } else {
+        grad.addColorStop(0, 'rgba(240,96,96,0.40)');
+        grad.addColorStop(1, 'rgba(240,96,96,0.95)');
+      }
+
+      const radius = Math.min(3, barW / 2, barH / 2);
+      ctx.save();
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      if (isPos) {
+        ctx.moveTo(x + radius, barTop);
+        ctx.lineTo(x + barW - radius, barTop);
+        ctx.quadraticCurveTo(x + barW, barTop, x + barW, barTop + radius);
+        ctx.lineTo(x + barW, barTop + barH);
+        ctx.lineTo(x, barTop + barH);
+        ctx.lineTo(x, barTop + radius);
+        ctx.quadraticCurveTo(x, barTop, x + radius, barTop);
+      } else {
+        ctx.moveTo(x, barTop);
+        ctx.lineTo(x + barW, barTop);
+        ctx.lineTo(x + barW, barTop + barH - radius);
+        ctx.quadraticCurveTo(x + barW, barTop + barH, x + barW - radius, barTop + barH);
+        ctx.lineTo(x + radius, barTop + barH);
+        ctx.quadraticCurveTo(x, barTop + barH, x, barTop + barH - radius);
+        ctx.lineTo(x, barTop);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // 값 레이블 (막대가 충분히 크고, 거래 수가 적을 때)
+      if (n <= 30 && barH > 14) {
+        const label  = (isPos ? '+' : '') + fmtShort(profit);
+        const labelY = isPos ? barTop - 4 : barTop + barH + 11;
+        ctx.save();
+        ctx.font = `bold ${Math.min(9, Math.max(7, barW * 0.55))}px "DM Mono", monospace`;
+        ctx.fillStyle = isPos ? '#4ade80' : '#f06060';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, x + barW / 2, labelY);
+        ctx.restore();
+      }
+
+      // X축 레이블 (거래N)
+      const labelStep = n <= 10 ? 1 : n <= 20 ? 2 : n <= 40 ? 4 : 8;
+      if (i % labelStep === 0) {
+        ctx.save();
+        ctx.font = '9px "DM Mono", monospace';
+        ctx.fillStyle = 'rgba(255,255,255,0.38)';
+        ctx.textAlign = 'center';
+        ctx.fillText(`거래${i + 1}`, x + barW / 2, PAD_T + gH + 16);
+        ctx.restore();
+      }
+    });
+
+    // Y축 눈금 (금액)
+    ctx.save();
+    ctx.font = '9px "DM Mono", monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.30)';
+    ctx.textAlign = 'right';
+    for (let k = 0; k <= 4; k++) {
+      const v = yMin + (yMax - yMin) * (1 - k / 4);
+      ctx.fillText(fmtShort(v), PAD_L - 5, PAD_T + (k / 4) * gH + 3);
+    }
+    ctx.restore();
+  }
+
+  /* ── Short number format for chart labels ── */
+  function fmtShort(n) {
+    const abs = Math.abs(n);
+    const sign = n < 0 ? '-' : '';
+    if (abs >= 1e8) return sign + (abs / 1e8).toFixed(1) + '억';
+    if (abs >= 1e4) return sign + Math.round(abs / 1e4) + '만';
+    return sign + Math.round(abs).toLocaleString('ko-KR');
+  }
+
+  function confirmReset() {
+    if (confirm('모든 값을 지우겠습니까?')) {
+      rows = [];
+      rowCounter = 0;
+      document.getElementById('input-rows').innerHTML = '';
+      document.getElementById('result-tbody').innerHTML =
+        `<tr><td colspan="5" class="empty-result">하단 입력부에서 매입가·매도가를 입력 후 [추가]를 눌러주세요.</td></tr>`;
+      document.getElementById('display-final').textContent = '—';
+      document.getElementById('display-final').style.color = '';
+      document.getElementById('display-profit-sum').textContent = '—';
+      document.getElementById('display-profit-sum').style.color = '';
+      document.getElementById('display-profit-rate').textContent = '';
+      document.getElementById('trade-stats').style.display = 'none';
+      document.getElementById('loaded-file-bar').style.display = 'none';
+      document.getElementById('loaded-file-name').textContent = '';
+      document.getElementById('period-start').value = '';
+      document.getElementById('period-end').value = '';
+      document.getElementById('period-results').style.display = 'none';
+      document.getElementById('display-simple-profit').textContent = '—';
+      document.getElementById('display-simple-profit').style.color = '';
+      document.getElementById('btn-graph').disabled = true;
+      lastChartData = null;
+      currentLoadedFile = null;
+      if (graphOpen) closeGraph();
+      renderInputRow();
+    }
+  }
+
+  function fmt(n) {
+    if (isNaN(n)) return '-';
+    return Math.round(n).toLocaleString('ko-KR');
+  }
+
+
+
+  /* ── PERIOD AVERAGE ── */
+  function calcPeriodAvg() {
+    const startVal = document.getElementById('period-start').value;
+    const endVal   = document.getElementById('period-end').value;
+    if (!startVal || !endVal) {
+      document.getElementById('period-results').style.display = 'none';
+      return;
+    }
+    const start = new Date(startVal);
+    const end   = new Date(endVal);
+    if (end <= start) {
+      document.getElementById('period-results').style.display = 'none';
+      return;
+    }
+    const profitTotal = lastChartData ? (lastChartData.cumulatives[lastChartData.cumulatives.length - 1] - lastChartData.principal) : 0;
+    const msPerDay  = 1000 * 60 * 60 * 24;
+    const days      = (end - start) / msPerDay;
+    const months    = days / 30.4375;
+    const years     = days / 365.25;
+    const yearAvg   = years  > 0 ? profitTotal / years  : 0;
+    const monthAvg  = months > 0 ? profitTotal / months : 0;
+    const isPos = profitTotal >= 0;
+    const col   = isPos ? 'var(--accent)' : 'var(--red)';
+    const yearEl  = document.getElementById('ts-year-avg');
+    const monthEl = document.getElementById('ts-month-avg');
+    yearEl.textContent  = fmt(yearAvg);
+    monthEl.textContent = fmt(monthAvg);
+    yearEl.style.color  = col;
+    monthEl.style.color = col;
+    document.getElementById('ts-years').textContent  = years.toFixed(2) + '년';
+    document.getElementById('ts-months').textContent = months.toFixed(1) + '개월';
+    document.getElementById('period-results').style.display = '';
+  }
+
+    /* ══════════════════════════════════════════
+     SAVE / LOAD  (localStorage)
+  ══════════════════════════════════════════ */
+  const STORAGE_KEY = 'crc_saves';
+
+  function toggleSaveArea() {
+    // 불러온 파일이 있으면 패널 없이 바로 저장
+    if (currentLoadedFile) {
+      saveCurrentData();
+      return;
+    }
+    const saveArea = document.getElementById('save-area');
+    const loadArea = document.getElementById('load-area');
+    const isOpen = saveArea.classList.contains('open');
+    saveArea.classList.toggle('open', !isOpen);
+    // 저장 열면 불러오기 닫기
+    if (!isOpen) loadArea.classList.remove('open');
+    if (!isOpen) setTimeout(() => document.getElementById('save-name-input').focus(), 50);
+  }
+
+  function toggleLoadArea() {
+    const loadArea = document.getElementById('load-area');
+    const saveArea = document.getElementById('save-area');
+    const isOpen = loadArea.classList.contains('open');
+    loadArea.classList.toggle('open', !isOpen);
+    // 불러오기 열면 저장 닫기
+    if (!isOpen) saveArea.classList.remove('open');
+    if (!isOpen) renderSavedList();
+  }
+
+  function getSaves() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+
+  function putSaves(arr) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+  }
+
+  function autoSaveToFile(name) {
+    if (!name || rows.length === 0) return;
+    const saves = getSaves();
+    const existing = saves.findIndex(s => s.name === name);
+    const entry = {
+      name,
+      principal: getPrincipal(),
+      rows: rows.map(r => ({ buy: r.buy, sell: r.sell })),
+      savedAt: new Date().toLocaleString('ko-KR')
+    };
+    if (existing !== -1) {
+      saves[existing] = entry;
+    } else {
+      saves.unshift(entry);
+    }
+    putSaves(saves);
+  }
+
+  function saveCurrentData() {
+    // 불러온 파일이 있으면 해당 파일명으로 바로 저장
+    if (currentLoadedFile) {
+      if (rows.length === 0) { showToast('저장할 데이터가 없습니다'); return; }
+      autoSaveToFile(currentLoadedFile);
+      document.getElementById('save-area').classList.remove('open');
+      showToast(`"${currentLoadedFile}" 저장 완료!`);
+      return;
+    }
+
+    const name = document.getElementById('save-name-input').value.trim();
+    if (!name) { showToast('이름을 입력해주세요'); return; }
+    if (rows.length === 0) { showToast('저장할 데이터가 없습니다'); return; }
+
+    const saves = getSaves();
+    const existing = saves.findIndex(s => s.name === name);
+    const entry = {
+      name,
+      principal: getPrincipal(),
+      rows: rows.map(r => ({ buy: r.buy, sell: r.sell })),
+      savedAt: new Date().toLocaleString('ko-KR')
+    };
+
+    if (existing !== -1) {
+      if (!confirm(`"${name}" 이름으로 저장된 데이터가 있습니다. 덮어쓸까요?`)) return;
+      saves[existing] = entry;
+    } else {
+      saves.unshift(entry);
+    }
+
+    putSaves(saves);
+    document.getElementById('save-name-input').value = '';
+    // 저장 후 저장영역 닫기
+    document.getElementById('save-area').classList.remove('open');
+    showToast(`"${name}" 저장 완료!`);
+  }
+
+  function loadSave(name) {
+    const saves = getSaves();
+    const entry = saves.find(s => s.name === name);
+    if (!entry) return;
+
+    if (rows.length > 0) {
+      if (!confirm(`현재 입력된 데이터가 지워집니다. "${name}"을 불러올까요?`)) return;
+    }
+
+    // Reset state
+    rows = [];
+    rowCounter = 0;
+    document.getElementById('input-rows').innerHTML = '';
+    if (graphOpen) closeGraph();
+
+    // Set principal
+    document.getElementById('principal-input').value = addCommas(String(entry.principal));
+    syncPrincipalDisplay();
+
+    // Rebuild rows silently (no auto-renderInputRow between items)
+    entry.rows.forEach(r => {
+      renderInputRow();
+      const n = rowCounter;
+      const buyEl  = document.getElementById(`buy-${n}`);
+      const sellEl = document.getElementById(`sell-${n}`);
+      buyEl.value  = addCommas(String(r.buy));
+      sellEl.value = addCommas(String(r.sell));
+      autoShrinkFont(buyEl);
+      autoShrinkFont(sellEl);
+      // Freeze directly without triggering renderInputRow
+      buyEl.classList.add('frozen');
+      sellEl.classList.add('frozen');
+      document.getElementById(`btn-${n}`).disabled = true;
+      rows.push({ buy: r.buy, sell: r.sell, rowN: n });
+    });
+
+    // Add one blank row at the end
+    renderInputRow();
+
+    renderResults();
+    currentLoadedFile = name;
+    document.getElementById('loaded-file-name').textContent = name;
+    document.getElementById('loaded-file-bar').style.display = '';
+    document.getElementById('period-start').value = '';
+    document.getElementById('period-end').value = '';
+    document.getElementById('period-results').style.display = 'none';
+    showToast(`"${name}" 불러오기 완료!`);
+  }
+
+  function deleteSave(name) {
+    if (!confirm(`"${name}"을 삭제할까요?`)) return;
+    const saves = getSaves().filter(s => s.name !== name);
+    putSaves(saves);
+    renderSavedList();
+    showToast(`"${name}" 삭제됨`);
+  }
+
+  function renderSavedList() {
+    const saves = getSaves();
+    const el = document.getElementById('saved-list');
+    if (saves.length === 0) {
+      el.innerHTML = '<div class="save-empty">저장된 데이터가 없습니다</div>';
+      return;
+    }
+    el.innerHTML = saves.map(s => `
+      <div class="saved-item">
+        <div class="saved-item-info">
+          <span class="saved-item-name">📁 ${escHtml(s.name)}</span>
+          <span class="saved-item-meta">${escHtml(s.savedAt)}</span>
+        </div>
+        <button class="btn-load" onclick="loadSave('${escAttr(s.name)}')">불러오기</button>
+        <button class="btn-del"  onclick="deleteSave('${escAttr(s.name)}')">삭제</button>
+      </div>
+    `).join('');
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escAttr(s) {
+    return s.replace(/'/g, "\'");
+  }
+
+  let toastTimer = null;
+  function showToast(msg) {
+    const t = document.getElementById('save-toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // Enter key on save-name-input triggers save
+  document.getElementById('save-name-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveCurrentData();
+  });
+
+  // Redraw chart on window resize
+  window.addEventListener('resize', () => {
+    if (graphOpen && lastChartData) {
+      drawChart(lastChartData.principal, lastChartData.cumulatives);
+      if (lastChartData.singleProfits) drawBarChart(lastChartData.singleProfits);
+    }
+  });
+</script>
+</body>
+</html>
